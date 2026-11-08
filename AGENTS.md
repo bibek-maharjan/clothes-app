@@ -1,7 +1,7 @@
 # Clothes app — project notes
 
 Read this first when starting a new session. Sister app of
-`/run/media/bibek/New Volume/purchases-app` (read its `AGENTS.md` for the
+`/mnt/jarvis/purchases-app` (read its `AGENTS.md` for the
 background, testing notes, and the user's preferences). Same approach, same
 rules: no build step, offline PWA, phone only, data in IndexedDB, manual
 Export/Import .zip backup.
@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v9`).
+  (now `clothes-v10`).
 
 ## Update history
 
@@ -60,6 +60,10 @@ Export/Import .zip backup.
 - v9: bug fix: closing the keyboard with Android's back button left `#search`
   focused, so `body.searching` kept the + button hidden. A `visualViewport`
   resize listener blurs the box when the keyboard closes (screen grows back).
+
+- v10: keyboard fix. Android used to pan the view down to the fixed search bar when the
+  keyboard opened, hiding the results above. The viewport meta now has
+  `interactive-widget=resizes-content`. Same fix in Things and Purchases. Not deployed yet.
 
 ## Decisions (from the user, Nov 2026)
 
