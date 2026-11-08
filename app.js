@@ -46,6 +46,33 @@ async function resize(file, maxSide, quality) {
   return new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
 }
 
+// Draws a photo turned clockwise by `turns` quarter turns (1 = 90°).
+function turnedCanvas(bmp, turns) {
+  const side = turns % 2 === 1;
+  const canvas = document.createElement('canvas');
+  canvas.width = side ? bmp.height : bmp.width;
+  canvas.height = side ? bmp.width : bmp.height;
+  const ctx = canvas.getContext('2d');
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate(turns * Math.PI / 2);
+  ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2);
+  return canvas;
+}
+
+// Rotates, then crops (`crop` = part of the turned photo, as fractions 0–1),
+// and saves as JPEG once.
+async function editPhoto(blob, turns, crop = { x: 0, y: 0, w: 1, h: 1 }) {
+  const bmp = await createImageBitmap(blob);
+  const src = turnedCanvas(bmp, turns);
+  bmp.close();
+  const out = document.createElement('canvas');
+  out.width = Math.max(1, Math.round(src.width * crop.w));
+  out.height = Math.max(1, Math.round(src.height * crop.h));
+  out.getContext('2d').drawImage(src, Math.round(src.width * crop.x), Math.round(src.height * crop.y),
+    out.width, out.height, 0, 0, out.width, out.height);
+  return new Promise(r => out.toBlob(r, 'image/jpeg', 0.75));
+}
+
 // Like Promise.all, but only `limit` items are in flight at once (keeps memory sane).
 async function mapLimit(list, limit, fn) {
   const out = new Array(list.length);
@@ -387,15 +414,25 @@ $('#picks').replaceChildren(...PICKS.map(p => {
 
 // ---------- Editor ----------
 
-// Editor photo row: ★ makes a photo the cover (first), × removes it.
+// Editor photo row: ★ makes a photo the cover (first), × removes it,
+// ↻ turns it 90° (only previewed here; the photo is redrawn once on Save),
+// ✂ opens the crop screen.
 function renderStrip() {
   $('#photoHint').hidden = editPhotos.length > 0;
   $('#photoStrip').replaceChildren(...editPhotos.map((p, i) => {
     const el = document.createElement('div');
     el.className = 'thumb';
-    el.innerHTML = `<img src="${p.url}" alt="">
+    el.innerHTML = `<img src="${p.url}" alt="" style="transform: rotate(${(p.turns ?? 0) * 90}deg)">
       <button type="button" class="cover" aria-label="Make cover">★</button>
-      <button type="button" class="del" aria-label="Remove">×</button>`;
+      <button type="button" class="del" aria-label="Remove">×</button>
+      <button type="button" class="turn" aria-label="Rotate">↻</button>
+      <button type="button" class="crop" aria-label="Crop">✂</button>`;
+    el.querySelector('.crop').onclick = () => openCrop(p);
+    el.querySelector('.turn').onclick = () => {
+      p.turns = ((p.turns ?? 0) + 1) % 4;
+      photosChanged = true;
+      renderStrip();
+    };
     el.querySelector('.cover').onclick = () => {
       editPhotos.unshift(...editPhotos.splice(i, 1));
       photosChanged = true;
@@ -505,6 +542,12 @@ $('#form').onsubmit = async e => {
     photoCount: editing?.photoCount ?? (editing?.thumb ? 1 : 0),
   };
   if (photosChanged) {
+    for (const p of editPhotos) {
+      if (!p.turns) continue;
+      p.full = await editPhoto(p.full, p.turns);
+      p.thumb = null;
+      p.turns = 0;
+    }
     const cover = editPhotos[0];
     item.thumb = cover ? cover.thumb ?? await resize(cover.full, 240, 0.7) : null;
     item.photoCount = editPhotos.length;
@@ -518,6 +561,93 @@ $('#form').onsubmit = async e => {
 
 $('#editor').onclose = clearStrip;
 $('#cancelBtn').onclick = () => $('#editor').close();
+
+// ---------- Crop ----------
+// The box is kept as fractions (0–1) of the shown photo, so it doesn't
+// depend on screen size.
+let cropPhoto = null;
+let cropBox = null;
+const FULL_BOX = { x: 0, y: 0, w: 1, h: 1 };
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+function drawCropBox() {
+  const s = $('#cropBox').style;
+  s.left = cropBox.x * 100 + '%';
+  s.top = cropBox.y * 100 + '%';
+  s.width = cropBox.w * 100 + '%';
+  s.height = cropBox.h * 100 + '%';
+}
+
+async function openCrop(p) {
+  cropPhoto = p;
+  const bmp = await createImageBitmap(p.full);
+  const src = turnedCanvas(bmp, p.turns ?? 0);
+  bmp.close();
+  const c = $('#cropCanvas');
+  c.width = src.width;
+  c.height = src.height;
+  c.getContext('2d').drawImage(src, 0, 0);
+  cropBox = { ...FULL_BOX };
+  drawCropBox();
+  $('#cropper').showModal();
+  // Fit the photo inside the dialog and 70% of the screen height.
+  const scale = Math.min(1, ($('#cropper').clientWidth - 28) / c.width, innerHeight * 0.7 / c.height);
+  c.style.width = c.width * scale + 'px';
+  c.style.height = c.height * scale + 'px';
+}
+
+// Drag a corner to resize, drag inside the box to move it.
+$('#cropArea').onpointerdown = e => {
+  const mode = e.target.dataset.h ?? (e.target.id === 'cropBox' ? 'move' : null);
+  if (!mode) return;
+  e.preventDefault();
+  const rect = $('#cropCanvas').getBoundingClientRect();
+  const start = { ...cropBox };
+  const MIN = 0.05;
+  const move = ev => {
+    const dx = (ev.clientX - e.clientX) / rect.width;
+    const dy = (ev.clientY - e.clientY) / rect.height;
+    let { x, y, w, h } = start;
+    if (mode === 'move') {
+      x = clamp(x + dx, 0, 1 - w);
+      y = clamp(y + dy, 0, 1 - h);
+    } else {
+      if (mode.includes('l')) { const nx = clamp(x + dx, 0, x + w - MIN); w += x - nx; x = nx; }
+      if (mode.includes('r')) w = clamp(w + dx, MIN, 1 - x);
+      if (mode.includes('t')) { const ny = clamp(y + dy, 0, y + h - MIN); h += y - ny; y = ny; }
+      if (mode.includes('b')) h = clamp(h + dy, MIN, 1 - y);
+    }
+    cropBox = { x, y, w, h };
+    drawCropBox();
+  };
+  const up = () => {
+    removeEventListener('pointermove', move);
+    removeEventListener('pointerup', up);
+    removeEventListener('pointercancel', up);
+  };
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+  addEventListener('pointercancel', up);
+};
+
+$('#cropReset').onclick = () => { cropBox = { ...FULL_BOX }; drawCropBox(); };
+$('#cropCancel').onclick = () => $('#cropper').close();
+
+// Done: rotation and crop are saved into the photo as one new JPEG.
+$('#cropDone').onclick = async () => {
+  const p = cropPhoto;
+  const b = cropBox;
+  if (b.x > 0 || b.y > 0 || b.w < 1 || b.h < 1) {
+    p.full = await editPhoto(p.full, p.turns ?? 0, b);
+    p.turns = 0;
+    p.thumb = null;
+    URL.revokeObjectURL(p.url);
+    p.url = URL.createObjectURL(p.full);
+    photosChanged = true;
+    renderStrip();
+  }
+  $('#cropper').close();
+};
 
 $('#deleteBtn').onclick = async () => {
   if (!confirm(`Delete "${displayName(editing)}"?`)) return;

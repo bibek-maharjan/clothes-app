@@ -75,6 +75,18 @@
     </form>
   </dialog>
 
+  <dialog id="cropper">
+    <div id="cropArea">
+      <canvas id="cropCanvas"></canvas>
+      <div id="cropBox"><span data-h="tl"></span><span data-h="tr"></span><span data-h="bl"></span><span data-h="br"></span></div>
+    </div>
+    <div class="row">
+      <button type="button" id="cropReset">Reset</button>
+      <button type="button" id="cropCancel">Cancel</button>
+      <button type="button" id="cropDone" class="primary">Done</button>
+    </div>
+  </dialog>
+
   <dialog id="details">
     <div id="detailsPhotos"></div>
     <div id="detailsInfo"></div>

@@ -114,7 +114,21 @@ dialog::backdrop { background: #000a; }
 }
 .thumb .del { right: 4px; }
 .thumb .cover { left: 4px; }
+.thumb .turn { top: auto; bottom: 4px; right: 4px; }
+.thumb .crop { top: auto; bottom: 4px; left: 4px; }
 .thumb:first-child .cover { color: #ffd34d; }
+
+#cropper[open] { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+#cropper .row { align-self: stretch; }
+#cropArea { position: relative; overflow: hidden; touch-action: none; user-select: none; }
+#cropCanvas { display: block; }
+/* The huge shadow darkens everything outside the box. */
+#cropBox { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 9999px #000a; }
+#cropBox span { position: absolute; width: 32px; height: 32px; border: 0 solid #fff; }
+#cropBox [data-h=tl] { left: -4px; top: -4px; border-width: 5px 0 0 5px; }
+#cropBox [data-h=tr] { right: -4px; top: -4px; border-width: 5px 5px 0 0; }
+#cropBox [data-h=bl] { left: -4px; bottom: -4px; border-width: 0 0 5px 5px; }
+#cropBox [data-h=br] { right: -4px; bottom: -4px; border-width: 0 5px 5px 0; }
 
 #viewer { padding: 0; width: auto; max-width: 100vw; background: #000; }
 #viewerPhotos { display: flex; flex-direction: column; gap: 6px; max-height: 95vh; overflow-y: auto; }

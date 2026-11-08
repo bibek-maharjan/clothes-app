@@ -10,7 +10,14 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v1`).
+  (now `clothes-v2`).
+
+## Update history
+
+- v1: first version.
+- v2: ↻ rotate and ✂ crop for each photo in the editor, copied from Purchases
+  v18/v19 (`turnedCanvas()`, `editPhoto()`, `#cropper` dialog). See the
+  Purchases `AGENTS.md` (Rotate / Crop) for how they work; keep both apps in sync.
 
 ## Decisions (from the user, Nov 2026)
 
@@ -53,4 +60,9 @@ Downloads and `setInputFiles` work there.
 
 Script: `/run/media/bibek/New Volume/clothes-migration/migrate_clothes.py`
 (outside this repo). Reads `notion/*.md` in the vault (never changes it) and
-writes `clothes-migration.zip` for Import.
+writes `clothes-migration.zip` for Import, plus `migration-report.txt`.
+Rules are in the script's top comment (name = file name with `_` → space,
+values lowercased except brand, "Home, Outside" split, the conflict copy of
+`half_trouser_green` merged in as a 2nd photo). First run (Nov 2026): 62 items,
+63 photos, 6.6 MB, no broken links. Import tested in a browser: 62 items in
+~0.3 s.
