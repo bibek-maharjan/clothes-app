@@ -152,20 +152,39 @@ function renderFilters() {
 }
 
 // Filters sheet: every field that has values, with its chips.
+// The search box narrows the chips; typing a field name shows that whole field.
 function renderFilterMenu() {
-  $('#filterPicks').replaceChildren(...PICKS.flatMap(p => {
-    const values = mostUsed(items.flatMap(i => list(i[p.key])));
+  const q = $('#filterSearch').value.trim().toLowerCase();
+  const sections = PICKS.flatMap(p => {
+    let values = mostUsed(items.flatMap(i => list(i[p.key])));
+    if (q && !p.label.toLowerCase().includes(q)) {
+      values = values.filter(v => v.toLowerCase().includes(q) || isFiltered(p.key, v));
+    }
     if (!values.length) return [];
     const el = document.createElement('div');
     el.className = 'pick';
     el.innerHTML = `<div class="label">${p.label}</div><div class="chips"></div>`;
     el.querySelector('.chips').append(...values.map(v => filterChip(p.key, v)));
     return [el];
-  }));
+  });
+  if (!sections.length) {
+    const none = document.createElement('div');
+    none.className = 'hint';
+    none.textContent = 'No match';
+    sections.push(none);
+  }
+  $('#filterPicks').replaceChildren(...sections);
   $('#closeFilters').textContent = `Show ${items.filter(passes).length}`;
 }
 
-$('#filterBtn').onclick = () => { renderFilterMenu(); $('#filters').showModal(); };
+$('#filterBtn').onclick = () => {
+  $('#filterSearch').value = '';
+  renderFilterMenu();
+  $('#filters').showModal();
+  $('#filterPicks').scrollTop = 0;
+};
+$('#filterSearch').oninput = renderFilterMenu;
+$('#filterSearch').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 $('#closeFilters').onclick = () => $('#filters').close();
 $('#clearFilters').onclick = () => { filters = {}; renderFilters(); search(); };
 
@@ -445,23 +464,56 @@ function choose(p, value, on) {
   renderPick(p);
 }
 
-// One row of chips per field. Tap to pick (tap again to unpick); "+ new" adds a value.
+// One row of chips per field. Tap to pick (tap again to unpick).
+// Typing in "find / + new" narrows the chips; if the value is new, "+ add" appears.
 function renderPick(p) {
   const chips = $(`#pick-${p.key} .chips`);
   const isOn = v => picked[p.key].some(c => same(c, v));
-  const add = document.createElement('input');
-  add.placeholder = '+ new';
-  add.enterKeyHint = 'done';
-  add.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add.blur(); } };
-  add.onchange = () => { if (add.value.trim()) choose(p, add.value.trim(), true); };
-  chips.replaceChildren(...choices(p).map(v => {
+  const values = choices(p);
+  const find = document.createElement('input');
+  find.className = 'find';
+  find.placeholder = 'find / + new';
+  find.enterKeyHint = 'done';
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'add';
+  add.hidden = true;
+  const buttons = values.map(v => {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = v;
     b.className = isOn(v) ? 'on' : '';
     b.onclick = () => choose(p, v, !isOn(v));
     return b;
-  }), add);
+  });
+  // "+ add": pick the value with that exact name, or add it as new.
+  const pickTyped = () => {
+    const typed = find.value.trim();
+    if (typed) choose(p, values.find(v => same(v, typed)) ?? typed, true);
+  };
+  // Enter: exact name, or the only match, or new if nothing matches.
+  // With several matches it waits for more typing.
+  const pickBest = () => {
+    const typed = find.value.trim();
+    const q = typed.toLowerCase();
+    const found = values.filter(v => v.toLowerCase().includes(q));
+    const pick = values.find(v => same(v, typed)) ?? (found.length === 1 ? found[0] : found.length ? null : typed);
+    if (pick) choose(p, pick, true);
+  };
+  find.oninput = () => {
+    const typed = find.value.trim();
+    const q = typed.toLowerCase();
+    buttons.forEach((b, i) => { b.hidden = !!q && !isOn(values[i]) && !values[i].toLowerCase().includes(q); });
+    add.hidden = !q || values.some(v => same(v, typed));
+    add.textContent = `+ add "${typed}"`;
+  };
+  find.onkeydown = e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (find.value.trim()) pickBest(); else find.blur();
+  };
+  add.onclick = pickTyped;
+  chips.replaceChildren(find, ...buttons, add);
 }
 
 $('#picks').replaceChildren(...PICKS.map(p => {

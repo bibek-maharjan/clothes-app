@@ -154,7 +154,12 @@ dialog::backdrop { background: #000a; }
   padding: 7px 12px; border-radius: 18px; font-size: 14px; width: auto;
 }
 .chips button.on { background: #1f9e8f; border-color: #1f9e8f; }
-.chips input { width: 96px; background: transparent; border-style: dashed; }
+.chips input { width: 116px; background: transparent; border-style: dashed; }
+.chips input:focus { outline: none; border-style: solid; border-color: #1f9e8f; }
+.chips button[hidden] { display: none; }
+.chips button.add { background: transparent; border: 1px dashed #1f9e8f; color: #7ee2d4; }
+#filterSearch { border-radius: 22px; padding: 10px 16px; }
+#filterSearch:focus { outline: none; border-color: #1f9e8f; }
 #picks { display: flex; flex-direction: column; gap: 8px; }
 
 .price { color: #7ee2a8; font-weight: 600; }

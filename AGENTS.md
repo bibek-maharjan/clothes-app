@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v3`).
+  (now `clothes-v4`).
 
 ## Update history
 
@@ -23,6 +23,12 @@ Export/Import .zip backup.
   chips for every field. Same field = any of them (OR), different fields = all
   of them (AND), and the search box applies on top. Filters are not saved
   between visits.
+- v4: search for chips. Filters sheet: `#filterSearch` narrows values (a
+  field name shows the whole field; chosen chips stay visible). Editor: each
+  field's "find / + new" box (first in the row) narrows its chips and shows
+  `+ add "…"` for a new value. Enter = exact name, else the only match, else
+  add new if nothing matches (does nothing with several matches). No add on
+  blur, so tapping a chip after typing never adds the typed text.
 
 ## Decisions (from the user, Nov 2026)
 
