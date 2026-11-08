@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v6`).
+  (now `clothes-v7`).
 
 ## Update history
 
@@ -44,6 +44,17 @@ Export/Import .zip backup.
   the only match. Empty box: active filters, then the **5 recent** filters
   (localStorage `clothes-recent`, `[{ key, v }]`, saved when a filter is
   turned on anywhere; values no item has any more are skipped).
+- v7: the user's idea: **no top bar any more**; the chip strip (`#quickRow`:
+  Filters button + `#quick`) sits inside `#searchBar`, above the bottom
+  search. The bottom search still filters by text as you type, and its text
+  suggests chips (`suggestions()`: whole text if it matches values, else the
+  last word). Tapping a suggestion turns that text into a filter (the rest of
+  the text stays) and keeps the keyboard open. Strip order: active filters
+  (always), then suggestions while typing, or the 5 recent when the empty box
+  has focus. Strip hidden when nothing to show and the box isn't focused.
+  `body.strip` lifts the + button; `body.searching` hides it.
+  `#clearBtn` ("✕ Clear", after the Filters button) shows while any filter
+  is on and clears them all in one tap.
 
 ## Decisions (from the user, Nov 2026)
 

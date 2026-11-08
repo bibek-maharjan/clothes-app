@@ -164,54 +164,59 @@ function quickMatches(q) {
   return found.sort((a, b) => starts(a) - starts(b));
 }
 
-// Top bar. Typing: matching values from every field. Empty: the active
-// filters (tap to remove), then the 5 recent ones.
+// Chips to suggest for the search text. If the whole text matches values
+// (e.g. "sky blue"), use it; otherwise use the last word. `rest` is the text
+// left in the box after picking a chip.
+function suggestions() {
+  const typed = $('#search').value.trim().toLowerCase();
+  if (!typed) return null;
+  const whole = quickMatches(typed);
+  if (whole.length) return { found: whole, rest: '' };
+  const words = typed.split(/\s+/);
+  const last = words.pop();
+  return { found: quickMatches(last), rest: words.join(' ') };
+}
+
+// Chip strip above the bottom search. Always: active filters first (tap to
+// remove). Then, while typing: matching values from every field (tapping one
+// turns the typed word into a filter). Empty box with focus: the 5 recent ones.
 function renderFilters() {
   const n = filterCount();
   $('#filterBtn').textContent = n ? `Filters (${n})` : 'Filters';
   $('#filterBtn').classList.toggle('on', n > 0);
-  const q = $('#quickSearch').value.trim().toLowerCase();
-  let shown;
-  if (q) {
-    shown = quickMatches(q);
-  } else {
-    const active = PICKS.flatMap(p => (filters[p.key] ?? []).map(v => ({ key: p.key, v })));
-    const old = recent.filter(r => !isFiltered(r.key, r.v) && valuesOf(r.key).some(v => same(v, r.v)));
-    shown = [...active, ...old];
-  }
-  const chips = shown.map(m => {
+  $('#clearBtn').hidden = n === 0;
+  const focused = document.activeElement === $('#search');
+  const typing = suggestions();
+  const active = PICKS.flatMap(p => (filters[p.key] ?? []).map(v => ({ key: p.key, v })));
+  const more = typing ? typing.found.filter(m => !isFiltered(m.key, m.v))
+    : focused ? recent.filter(r => !isFiltered(r.key, r.v) && valuesOf(r.key).some(v => same(v, r.v)))
+    : [];
+  const chip = (m, fromText) => {
     const b = filterChip(m.key, m.v, true);
-    if (q) {
-      // Keep the keyboard open and clear the box, ready for the next search.
-      b.onmousedown = e => e.preventDefault();
-      b.onclick = () => { $('#quickSearch').value = ''; toggleFilter(m.key, m.v); };
-    }
+    // Keep the keyboard open, ready for the next word.
+    b.onmousedown = e => e.preventDefault();
+    b.onclick = () => {
+      if (fromText) $('#search').value = typing.rest ? typing.rest + ' ' : '';
+      toggleFilter(m.key, m.v);
+    };
     return b;
-  });
-  if (q && !chips.length) {
-    const none = document.createElement('span');
-    none.className = 'hint';
-    none.textContent = 'No match';
-    chips.push(none);
-  }
-  $('#quick').replaceChildren(...chips);
-  $('#quick').classList.toggle('typing', !!q);
-  $('#quick').hidden = !chips.length;
+  };
+  const shown = [...active, ...more];
+  $('#quick').replaceChildren(...active.map(m => chip(m, false)), ...more.map(m => chip(m, !!typing)));
+  $('#quick').classList.toggle('typing', !!typing);
+  const visible = focused || shown.length > 0 || n > 0;
+  $('#quickRow').hidden = !visible;
+  document.body.classList.toggle('strip', visible);
+  document.body.classList.toggle('searching', focused);
   if ($('#filters').open) renderFilterMenu();
 }
 
-$('#quickSearch').oninput = renderFilters;
-$('#quickSearch').onkeydown = e => {
-  if (e.key !== 'Enter') return;
-  const q = e.target.value.trim().toLowerCase();
-  const found = q ? quickMatches(q) : [];
-  if (found.length === 1) {
-    e.target.value = '';
-    toggleFilter(found[0].key, found[0].v);
-  } else {
-    e.target.blur();
-  }
-};
+$('#filterBtn').onmousedown = e => e.preventDefault();
+$('#clearBtn').onmousedown = e => e.preventDefault();
+$('#clearBtn').onclick = () => { filters = {}; renderFilters(); search(); };
+$('#search').onfocus = renderFilters;
+$('#search').onblur = renderFilters;
+$('#search').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 
 // Filters sheet: every field that has values, with its chips.
 // The search box narrows the chips; typing a field name shows that whole field.
@@ -903,7 +908,7 @@ async function load() {
   search();
 }
 
-$('#search').oninput = search;
+$('#search').oninput = () => { search(); renderFilters(); };
 $('#addBtn').onclick = () => openEditor(null);
 applyView();
 load();
