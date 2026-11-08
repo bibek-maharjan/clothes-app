@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#16161a">
+  <title>Clothes</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="count"></div>
+  <main id="list"></main>
+  <div id="sentinel"></div>
+  <button id="addBtn" aria-label="Add">+</button>
+  <div id="searchBar">
+    <input id="search" type="search" placeholder="Search… e.g. upper winter" autocomplete="off">
+    <button id="viewBtn" aria-label="View">▦</button>
+    <button id="menuBtn" aria-label="Menu">⋮</button>
+  </div>
+
+  <dialog id="menu">
+    <button id="exportBtn">Export backup (.zip)</button>
+    <label class="btn"><span id="importLabel">Import backup</span><input id="importFile" type="file" accept=".zip,application/zip" hidden></label>
+    <button id="closeMenu">Close</button>
+  </dialog>
+
+  <dialog id="viewMenu">
+    <div class="row seg">
+      <button type="button" data-mode="list">List</button>
+      <button type="button" data-mode="gallery">Gallery</button>
+    </div>
+    <div class="row cols" id="colsRow">
+      <button type="button" id="colsMinus">−</button>
+      <span id="colsLabel"></span>
+      <button type="button" id="colsPlus">+</button>
+    </div>
+    <div class="hint">Show in this view</div>
+    <div id="propList"></div>
+    <button id="closeView">Close</button>
+  </dialog>
+
+  <dialog id="editor">
+    <form id="form" method="dialog">
+      <div id="photoStrip"></div>
+      <div id="photoHint" class="hint">No photo</div>
+      <div class="row">
+        <label class="btn">Camera<input id="cameraInput" type="file" accept="image/*" capture="environment" hidden></label>
+        <label class="btn">Upload<input id="uploadInput" type="file" accept="image/*" hidden></label>
+        <button type="button" id="pasteBtn">Paste</button>
+      </div>
+      <input name="title" placeholder="Name (optional)" autocomplete="off">
+      <div id="picks"></div>
+      <input name="price" type="number" inputmode="decimal" step="any" placeholder="Price">
+      <div class="label">Date bought</div>
+      <div class="row date-quick">
+        <button type="button" data-day="none">None</button>
+        <button type="button" data-day="today">Today</button>
+        <button type="button" data-day="yesterday">Yesterday</button>
+        <button type="button" data-day="custom">Custom</button>
+      </div>
+      <div class="row bs-date" id="customDate" hidden>
+        <select id="bsYear" aria-label="Year"></select>
+        <select id="bsMonth" aria-label="Month"></select>
+        <select id="bsDay" aria-label="Day"></select>
+        <label class="btn cal-btn" aria-label="Pick AD date">📅<input id="adPicker" type="date"></label>
+      </div>
+      <div id="adDate" class="hint"></div>
+      <div class="row">
+        <button type="button" id="deleteBtn" class="danger">Delete</button>
+        <button type="button" id="cancelBtn">Cancel</button>
+        <button type="submit" class="primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="details">
+    <div id="detailsPhotos"></div>
+    <div id="detailsInfo"></div>
+    <div class="row">
+      <button type="button" id="detailsEdit">Edit</button>
+      <button type="button" id="detailsClose" class="primary">Close</button>
+    </div>
+  </dialog>
+
+  <dialog id="viewer"><div id="viewerPhotos"></div></dialog>
+
+  <script src="nepali.js"></script>
+  <script src="zip.js"></script>
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
