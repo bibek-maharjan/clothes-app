@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v4`).
+  (now `clothes-v6`).
 
 ## Update history
 
@@ -29,6 +29,21 @@ Export/Import .zip backup.
   `+ add "…"` for a new value. Enter = exact name, else the only match, else
   add new if nothing matches (does nothing with several matches). No add on
   blur, so tapping a chip after typing never adds the typed text.
+- v5: update bug fix. GitHub Pages sends `Cache-Control: max-age=600`, and
+  `addAll()` went through the browser's HTTP cache, so a new `clothes-vN`
+  cache could be filled with the OLD files (v4 never showed on the phone).
+  `sw.js` now caches with `new Request(f, { cache: 'reload' })`. After a deploy
+  the app shows the new version on the 2nd open. Tested with
+  `/tmp/opencode/serve600.py` (a local server with the same header).
+  **Purchases `sw.js` still has this bug** (plain `c.addAll(FILES)`).
+- v6: top bar redesigned (replaces v3's row of every type). `#quickSearch`
+  box + Filters button. Typing shows matching values from **every** field
+  (`quickMatches()`; field name matches all its values; "starts with" first),
+  each chip with its field in small text. Tapping one turns it on, clears the
+  box and keeps the keyboard open (`mousedown` preventDefault). Enter picks
+  the only match. Empty box: active filters, then the **5 recent** filters
+  (localStorage `clothes-recent`, `[{ key, v }]`, saved when a filter is
+  turned on anywhere; values no item has any more are skipped).
 
 ## Decisions (from the user, Nov 2026)
 

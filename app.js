@@ -113,7 +113,18 @@ function search() {
 // field key -> chosen values. Same field: any of them (jacket or t-shirt).
 // Different fields: all of them (jacket and winter).
 let filters = {};
-const QUICK = 'type';  // field whose values are always in the top bar
+
+// The last 5 values turned on as filters, newest first: [{ key, v }].
+let recent = [];
+try { recent = JSON.parse(localStorage.getItem('clothes-recent')) ?? []; } catch {}
+
+function remember(key, v) {
+  recent = [{ key, v }, ...recent.filter(r => !(r.key === key && same(r.v, v)))].slice(0, 5);
+  localStorage.setItem('clothes-recent', JSON.stringify(recent));
+}
+
+const labelOf = key => PICKS.find(p => p.key === key)?.label ?? key;
+const valuesOf = key => mostUsed(items.flatMap(i => list(i[key])));
 
 function passes(item) {
   return Object.entries(filters).every(([key, vals]) =>
@@ -124,32 +135,83 @@ const isFiltered = (key, v) => (filters[key] ?? []).some(f => same(f, v));
 const filterCount = () => Object.values(filters).flat().length;
 
 function toggleFilter(key, v) {
+  const on = !isFiltered(key, v);
   const rest = (filters[key] ?? []).filter(f => !same(f, v));
-  filters[key] = isFiltered(key, v) ? rest : [...rest, v];
+  filters[key] = on ? [...rest, v] : rest;
+  if (on) remember(key, v);
   renderFilters();
   search();
 }
 
-function filterChip(key, v) {
+// withField: also show the field name in small text (top bar mixes all fields).
+function filterChip(key, v, withField) {
   const b = document.createElement('button');
   b.type = 'button';
-  b.textContent = v;
   b.className = isFiltered(key, v) ? 'on' : '';
+  b.innerHTML = esc(v) + (withField ? ` <small>${esc(labelOf(key).toLowerCase())}</small>` : '');
   b.onclick = () => toggleFilter(key, v);
   return b;
 }
 
-// Top bar: chosen values from other fields first (tap to remove), then every type.
+// Values from every field matching the typed text (a field name matches all
+// its values). Values that start with the text come first.
+function quickMatches(q) {
+  const found = PICKS.flatMap(p => {
+    const whole = p.label.toLowerCase().includes(q);
+    return valuesOf(p.key).filter(v => whole || v.toLowerCase().includes(q)).map(v => ({ key: p.key, v }));
+  });
+  const starts = m => m.v.toLowerCase().startsWith(q) ? 0 : 1;
+  return found.sort((a, b) => starts(a) - starts(b));
+}
+
+// Top bar. Typing: matching values from every field. Empty: the active
+// filters (tap to remove), then the 5 recent ones.
 function renderFilters() {
   const n = filterCount();
   $('#filterBtn').textContent = n ? `Filters (${n})` : 'Filters';
   $('#filterBtn').classList.toggle('on', n > 0);
-  const others = PICKS.filter(p => p.key !== QUICK)
-    .flatMap(p => (filters[p.key] ?? []).map(v => filterChip(p.key, v)));
-  const types = mostUsed(items.flatMap(i => list(i[QUICK]))).map(v => filterChip(QUICK, v));
-  $('#quick').replaceChildren(...others, ...types);
+  const q = $('#quickSearch').value.trim().toLowerCase();
+  let shown;
+  if (q) {
+    shown = quickMatches(q);
+  } else {
+    const active = PICKS.flatMap(p => (filters[p.key] ?? []).map(v => ({ key: p.key, v })));
+    const old = recent.filter(r => !isFiltered(r.key, r.v) && valuesOf(r.key).some(v => same(v, r.v)));
+    shown = [...active, ...old];
+  }
+  const chips = shown.map(m => {
+    const b = filterChip(m.key, m.v, true);
+    if (q) {
+      // Keep the keyboard open and clear the box, ready for the next search.
+      b.onmousedown = e => e.preventDefault();
+      b.onclick = () => { $('#quickSearch').value = ''; toggleFilter(m.key, m.v); };
+    }
+    return b;
+  });
+  if (q && !chips.length) {
+    const none = document.createElement('span');
+    none.className = 'hint';
+    none.textContent = 'No match';
+    chips.push(none);
+  }
+  $('#quick').replaceChildren(...chips);
+  $('#quick').classList.toggle('typing', !!q);
+  $('#quick').hidden = !chips.length;
   if ($('#filters').open) renderFilterMenu();
 }
+
+$('#quickSearch').oninput = renderFilters;
+$('#quickSearch').onkeydown = e => {
+  if (e.key !== 'Enter') return;
+  const q = e.target.value.trim().toLowerCase();
+  const found = q ? quickMatches(q) : [];
+  if (found.length === 1) {
+    e.target.value = '';
+    toggleFilter(found[0].key, found[0].v);
+  } else {
+    e.target.blur();
+  }
+};
 
 // Filters sheet: every field that has values, with its chips.
 // The search box narrows the chips; typing a field name shows that whole field.

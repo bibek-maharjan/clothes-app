@@ -1,11 +1,14 @@
 // Caches the app files so it opens offline. Bump VERSION after changing any file.
 // Caches are shared with the Purchases app (same website), so only touch 'clothes-' ones.
-const VERSION = 'clothes-v4';
+const VERSION = 'clothes-v6';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'db.js', 'zip.js', 'nepali.js',
   'manifest.json', 'icon-192.png', 'icon-512.png'];
 
+// cache: 'reload' skips the browser's HTTP cache. GitHub Pages lets the
+// browser reuse files for 10 minutes, which could put old files in the new cache.
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)));
+  e.waitUntil(caches.open(VERSION).then(c =>
+    c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))));
   self.skipWaiting();
 });
 
