@@ -218,6 +218,16 @@ $('#search').onfocus = renderFilters;
 $('#search').onblur = renderFilters;
 $('#search').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 
+// Closing the keyboard with Android's back button keeps the box focused (and
+// the + button hidden). The screen grows back when the keyboard closes: blur then.
+let fullHeight = visualViewport.height, keyboardOpen = false;
+visualViewport.addEventListener('resize', () => {
+  const h = visualViewport.height;
+  if (document.activeElement !== $('#search')) { fullHeight = h; keyboardOpen = false; return; }
+  if (h < fullHeight - 150) keyboardOpen = true;
+  else if (keyboardOpen) { keyboardOpen = false; $('#search').blur(); }
+});
+
 // Filters sheet: every field that has values, with its chips.
 // The search box narrows the chips; typing a field name shows that whole field.
 function renderFilterMenu() {
@@ -263,7 +273,7 @@ function esc(s) {
 // ---------- View settings (list / gallery) ----------
 const PROPS = [
   ['photo', 'Photo'], ['name', 'Name'], ['price', 'Price'],
-  ...PICKS.map(p => [p.key, p.label]),
+  ...PICKS.filter(p => p.key !== 'place').map(p => [p.key, p.key === 'where' ? 'Where › Place' : p.label]),
   ['dateBS', 'Date (BS)'], ['date', 'Date (AD)'],
 ];
 const propsOn = keys => Object.fromEntries(PROPS.map(([k]) => [k, !keys || keys.includes(k)]));
@@ -321,7 +331,7 @@ function itemHtml(item, on) {
   const looks = [hasPrice && `<span class="price">Rs ${esc(item.price)}</span>`,
     line('type', 'color', 'shade', 'position', 'size', 'brand')].filter(Boolean).join(' · ');
   const use = line('season', 'context', 'newness', 'other', 'set');
-  const where = line('where', 'place').replace(' · ', ' › ');
+  const where = show('where') ? [item.where, item.place].filter(Boolean).map(esc).join(' › ') : '';
   const dates = [
     show('dateBS') && esc(formatBS(item.dateBS)),
     show('date') && item.date && (show('dateBS') ? `<small>(${esc(item.date)})</small>` : esc(item.date)),

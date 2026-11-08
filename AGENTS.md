@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v7`).
+  (now `clothes-v9`).
 
 ## Update history
 
@@ -55,6 +55,11 @@ Export/Import .zip backup.
   `body.strip` lifts the + button; `body.searching` hides it.
   `#clearBtn` ("✕ Clear", after the Filters button) shows while any filter
   is on and clears them all in one tap.
+- v8: the card's 📍 line always shows `where › place`. The View menu has one
+  "Where › Place" checkbox (the `where` setting); Place has no checkbox now.
+- v9: bug fix: closing the keyboard with Android's back button left `#search`
+  focused, so `body.searching` kept the + button hidden. A `visualViewport`
+  resize listener blurs the box when the keyboard closes (screen grows back).
 
 ## Decisions (from the user, Nov 2026)
 
