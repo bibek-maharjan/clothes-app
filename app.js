@@ -102,12 +102,72 @@ function matches(item, words) {
 
 function search() {
   const words = $('#search').value.toLowerCase().split(/\s+/).filter(Boolean);
-  results = words.length ? items.filter(i => matches(i, words)) : items;
+  results = items.filter(i => passes(i) && matches(i, words));
   $('#count').textContent = `${results.length} of ${items.length}`;
   $('#list').replaceChildren();
   shown = 0;
   renderMore();
 }
+
+// ---------- Filters ----------
+// field key -> chosen values. Same field: any of them (jacket or t-shirt).
+// Different fields: all of them (jacket and winter).
+let filters = {};
+const QUICK = 'type';  // field whose values are always in the top bar
+
+function passes(item) {
+  return Object.entries(filters).every(([key, vals]) =>
+    !vals.length || list(item[key]).some(v => vals.some(f => same(f, v))));
+}
+
+const isFiltered = (key, v) => (filters[key] ?? []).some(f => same(f, v));
+const filterCount = () => Object.values(filters).flat().length;
+
+function toggleFilter(key, v) {
+  const rest = (filters[key] ?? []).filter(f => !same(f, v));
+  filters[key] = isFiltered(key, v) ? rest : [...rest, v];
+  renderFilters();
+  search();
+}
+
+function filterChip(key, v) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = v;
+  b.className = isFiltered(key, v) ? 'on' : '';
+  b.onclick = () => toggleFilter(key, v);
+  return b;
+}
+
+// Top bar: chosen values from other fields first (tap to remove), then every type.
+function renderFilters() {
+  const n = filterCount();
+  $('#filterBtn').textContent = n ? `Filters (${n})` : 'Filters';
+  $('#filterBtn').classList.toggle('on', n > 0);
+  const others = PICKS.filter(p => p.key !== QUICK)
+    .flatMap(p => (filters[p.key] ?? []).map(v => filterChip(p.key, v)));
+  const types = mostUsed(items.flatMap(i => list(i[QUICK]))).map(v => filterChip(QUICK, v));
+  $('#quick').replaceChildren(...others, ...types);
+  if ($('#filters').open) renderFilterMenu();
+}
+
+// Filters sheet: every field that has values, with its chips.
+function renderFilterMenu() {
+  $('#filterPicks').replaceChildren(...PICKS.flatMap(p => {
+    const values = mostUsed(items.flatMap(i => list(i[p.key])));
+    if (!values.length) return [];
+    const el = document.createElement('div');
+    el.className = 'pick';
+    el.innerHTML = `<div class="label">${p.label}</div><div class="chips"></div>`;
+    el.querySelector('.chips').append(...values.map(v => filterChip(p.key, v)));
+    return [el];
+  }));
+  $('#closeFilters').textContent = `Show ${items.filter(passes).length}`;
+}
+
+$('#filterBtn').onclick = () => { renderFilterMenu(); $('#filters').showModal(); };
+$('#closeFilters').onclick = () => $('#filters').close();
+$('#clearFilters').onclick = () => { filters = {}; renderFilters(); search(); };
 
 // ---------- List ----------
 function esc(s) {
@@ -725,6 +785,7 @@ $('#importFile').onchange = async e => {
 async function load() {
   items = await DB.allItems();
   items.sort((a, b) => b.created - a.created);
+  renderFilters();
   search();
 }
 

@@ -29,6 +29,18 @@ select {
 #viewBtn { font-size: 22px; padding: 0; }
 #count { padding: 0 12px 6px; color: #888; font-size: 13px; }
 
+/* Quick filters: sticky row at the top, scrolls sideways. */
+#quickBar {
+  position: sticky; top: 0; z-index: 3; display: flex; gap: 6px; align-items: center;
+  padding: 8px 10px; background: #16161a;
+}
+#filterBtn { flex: 0 0 auto; padding: 7px 12px; border-radius: 18px; font-size: 14px; }
+#filterBtn.on { background: #1f9e8f; border-color: #1f9e8f; }
+#quick { flex: 1; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+#quick button { flex: 0 0 auto; white-space: nowrap; }
+#filters[open] { display: flex; flex-direction: column; gap: 10px; max-height: 85vh; }
+#filterPicks { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+
 .item {
   display: flex; gap: 12px; padding: 8px 10px; border-bottom: 1px solid #222;
 }

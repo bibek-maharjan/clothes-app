@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v2`).
+  (now `clothes-v3`).
 
 ## Update history
 
@@ -18,6 +18,11 @@ Export/Import .zip backup.
 - v2: ↻ rotate and ✂ crop for each photo in the editor, copied from Purchases
   v18/v19 (`turnedCanvas()`, `editPhoto()`, `#cropper` dialog). See the
   Purchases `AGENTS.md` (Rotate / Crop) for how they work; keep both apps in sync.
+- v3: quick filters. Sticky top bar: **Filters** button + a chip for every
+  `type` value (`QUICK` in `app.js`), tap to toggle. The Filters sheet has
+  chips for every field. Same field = any of them (OR), different fields = all
+  of them (AND), and the search box applies on top. Filters are not saved
+  between visits.
 
 ## Decisions (from the user, Nov 2026)
 

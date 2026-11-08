@@ -10,6 +10,10 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="quickBar">
+    <button id="filterBtn">Filters</button>
+    <div id="quick" class="chips"></div>
+  </div>
   <div id="count"></div>
   <main id="list"></main>
   <div id="sentinel"></div>
@@ -39,6 +43,15 @@
     <div class="hint">Show in this view</div>
     <div id="propList"></div>
     <button id="closeView">Close</button>
+  </dialog>
+
+  <dialog id="filters">
+    <div class="hint">Same field: any of them. Different fields: all of them.</div>
+    <div id="filterPicks"></div>
+    <div class="row">
+      <button type="button" id="clearFilters">Clear all</button>
+      <button type="button" id="closeFilters" class="primary"></button>
+    </div>
   </dialog>
 
   <dialog id="editor">
