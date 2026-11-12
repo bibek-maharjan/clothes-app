@@ -72,14 +72,14 @@ Export/Import .zip backup.
   onto an existing value merges them (multi fields drop duplicates); delete
   only removes the value, never the items. Active filters and the 5 recent are
   updated too. Only values in use are listed (seeds in `PICKS` are not).
-  Tested headless: rename, merge, delete. Not deployed yet.
+  Tested headless: rename, merge, delete. Deployed with v12.
 
 - v12: exclude. A search word starting with `-` hides items that contain it
   (`-pant`). Typing `-pant` also suggests red **not pant** chips; tapping one
   adds it to `excluded` (key -> values, like `filters`; an item with any of
   them is hidden). Red chips show in the strip and count in Filters (N);
   Clear clears both. A value is never in both `filters` and `excluded`.
-  Not saved to the 5 recent. Tested headless. Not deployed yet.
+  Not saved to the 5 recent. Tested headless. Deployed.
 
 ## Decisions (from the user, Nov 2026)
 
