@@ -1,7 +1,7 @@
 # Clothes app — project notes
 
 Read this first when starting a new session. Sister app of
-`/mnt/jarvis/purchases-app` (read its `AGENTS.md` for the
+`/mnt/jarvis/personal-projects/purchases-app` (read its `AGENTS.md` for the
 background, testing notes, and the user's preferences). Same approach, same
 rules: no build step, offline PWA, phone only, data in IndexedDB, manual
 Export/Import .zip backup.
@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v10`).
+  (now `clothes-v12`).
 
 ## Update history
 
@@ -63,7 +63,23 @@ Export/Import .zip backup.
 
 - v10: keyboard fix. Android used to pan the view down to the fixed search bar when the
   keyboard opened, hiding the results above. The viewport meta now has
-  `interactive-widget=resizes-content`. Same fix in Things and Purchases. Not deployed yet.
+  `interactive-widget=resizes-content`. Same fix in Things and Purchases. Tested by the user in Things: works. Deployed.
+
+- v11: edit values. The Filters sheet has an **✎ Edit** toggle (`editValues`).
+  While on, tapping a chip opens `#valueEdit` (rename / delete) instead of
+  filtering. `changeValue()` rewrites that field in every item that uses the
+  value (case-insensitive) with one `DB.saveMany` (photos untouched). Renaming
+  onto an existing value merges them (multi fields drop duplicates); delete
+  only removes the value, never the items. Active filters and the 5 recent are
+  updated too. Only values in use are listed (seeds in `PICKS` are not).
+  Tested headless: rename, merge, delete. Not deployed yet.
+
+- v12: exclude. A search word starting with `-` hides items that contain it
+  (`-pant`). Typing `-pant` also suggests red **not pant** chips; tapping one
+  adds it to `excluded` (key -> values, like `filters`; an item with any of
+  them is hidden). Red chips show in the strip and count in Filters (N);
+  Clear clears both. A value is never in both `filters` and `excluded`.
+  Not saved to the 5 recent. Tested headless. Not deployed yet.
 
 ## Decisions (from the user, Nov 2026)
 

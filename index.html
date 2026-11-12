@@ -50,11 +50,23 @@
 
   <dialog id="filters">
     <input id="filterSearch" type="search" placeholder="🔍 Find a value… e.g. blue, winter" autocomplete="off" enterkeyhint="done">
-    <div class="hint">Same field: any of them. Different fields: all of them.</div>
+    <div class="hint" id="filterHint"></div>
     <div id="filterPicks"></div>
     <div class="row">
+      <button type="button" id="editValues">✎ Edit</button>
       <button type="button" id="clearFilters">Clear all</button>
       <button type="button" id="closeFilters" class="primary" autofocus></button>
+    </div>
+  </dialog>
+
+  <dialog id="valueEdit">
+    <div class="label" id="valueTitle"></div>
+    <input id="valueName" autocomplete="off" enterkeyhint="done">
+    <div class="hint" id="valueHint"></div>
+    <div class="row">
+      <button type="button" id="valueDelete" class="danger">Delete</button>
+      <button type="button" id="valueCancel">Cancel</button>
+      <button type="button" id="valueSave" class="primary">Rename</button>
     </div>
   </dialog>
 

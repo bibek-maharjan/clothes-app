@@ -47,6 +47,9 @@ select {
 #quick.typing { flex-wrap: wrap; overflow-x: hidden; overflow-y: auto; max-height: 40vh; }
 #quick small { color: #888; font-size: 11px; margin-left: 2px; }
 #quick button.on small { color: #d6fff8; }
+#quick button.not { background: #b84a4a; border-color: #b84a4a; }
+#quick button.not small { color: #ffd6d6; }
+#quick button.not-hint { color: #ff9b9b; }
 #filters[open] { display: flex; flex-direction: column; gap: 10px; max-height: 85vh; }
 #filterPicks { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 
@@ -167,6 +170,9 @@ dialog::backdrop { background: #000a; }
 .chips input:focus { outline: none; border-style: solid; border-color: #1f9e8f; }
 .chips button[hidden] { display: none; }
 .chips button.add { background: transparent; border: 1px dashed #1f9e8f; color: #7ee2d4; }
+#valueEdit[open] { display: flex; flex-direction: column; gap: 10px; }
+#editValues.on { background: #1f9e8f; border-color: #1f9e8f; }
+#filterPicks.editing .chips button { border-style: dashed; }
 #filterSearch { border-radius: 22px; padding: 10px 16px; }
 #filterSearch:focus { outline: none; border-color: #1f9e8f; }
 #picks { display: flex; flex-direction: column; gap: 8px; }

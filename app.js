@@ -94,10 +94,11 @@ function thumbUrl(item) {
 
 // ---------- Search ----------
 // Every word typed must appear (as part of a word) in some field.
+// A word starting with "-" must NOT appear ("-pant" hides pants).
 function matches(item, words) {
   const all = [item.name, item.price, item.date, formatBS(item.dateBS), ...PICKS.map(p => text(item[p.key]))]
     .join(' ').toLowerCase();
-  return words.every(w => all.includes(w));
+  return words.every(w => w[0] === '-' ? w.length === 1 || !all.includes(w.slice(1)) : all.includes(w));
 }
 
 function search() {
@@ -113,6 +114,8 @@ function search() {
 // field key -> chosen values. Same field: any of them (jacket or t-shirt).
 // Different fields: all of them (jacket and winter).
 let filters = {};
+// field key -> values to hide ("not pant"). An item with any of them is hidden.
+let excluded = {};
 
 // The last 5 values turned on as filters, newest first: [{ key, v }].
 let recent = [];
@@ -128,28 +131,36 @@ const valuesOf = key => mostUsed(items.flatMap(i => list(i[key])));
 
 function passes(item) {
   return Object.entries(filters).every(([key, vals]) =>
-    !vals.length || list(item[key]).some(v => vals.some(f => same(f, v))));
+    !vals.length || list(item[key]).some(v => vals.some(f => same(f, v))))
+    && Object.entries(excluded).every(([key, vals]) =>
+      !list(item[key]).some(v => vals.some(f => same(f, v))));
 }
 
 const isFiltered = (key, v) => (filters[key] ?? []).some(f => same(f, v));
-const filterCount = () => Object.values(filters).flat().length;
+const isExcluded = (key, v) => (excluded[key] ?? []).some(f => same(f, v));
+const filterCount = () => Object.values(filters).flat().length + Object.values(excluded).flat().length;
+const clearAll = () => { filters = {}; excluded = {}; renderFilters(); search(); };
 
-function toggleFilter(key, v) {
-  const on = !isFiltered(key, v);
-  const rest = (filters[key] ?? []).filter(f => !same(f, v));
-  filters[key] = on ? [...rest, v] : rest;
-  if (on) remember(key, v);
+// not = hide items with this value instead of showing only them.
+// A value is never both shown-only and hidden: turning one on drops the other.
+function toggleFilter(key, v, not = false) {
+  const [mine, other] = not ? [excluded, filters] : [filters, excluded];
+  const on = !(mine[key] ?? []).some(f => same(f, v));
+  const rest = (mine[key] ?? []).filter(f => !same(f, v));
+  mine[key] = on ? [...rest, v] : rest;
+  if (on) other[key] = (other[key] ?? []).filter(f => !same(f, v));
+  if (on && !not) remember(key, v);
   renderFilters();
   search();
 }
 
 // withField: also show the field name in small text (top bar mixes all fields).
-function filterChip(key, v, withField) {
+function filterChip(key, v, withField, not = false) {
   const b = document.createElement('button');
   b.type = 'button';
-  b.className = isFiltered(key, v) ? 'on' : '';
-  b.innerHTML = esc(v) + (withField ? ` <small>${esc(labelOf(key).toLowerCase())}</small>` : '');
-  b.onclick = () => toggleFilter(key, v);
+  b.className = not ? (isExcluded(key, v) ? 'not' : 'not-hint') : isFiltered(key, v) ? 'on' : '';
+  b.innerHTML = (not ? 'not ' : '') + esc(v) + (withField ? ` <small>${esc(labelOf(key).toLowerCase())}</small>` : '');
+  b.onclick = () => toggleFilter(key, v, not);
   return b;
 }
 
@@ -166,15 +177,19 @@ function quickMatches(q) {
 
 // Chips to suggest for the search text. If the whole text matches values
 // (e.g. "sky blue"), use it; otherwise use the last word. `rest` is the text
-// left in the box after picking a chip.
+// left in the box after picking a chip. A leading "-" ("-pant") suggests
+// "not" chips that hide those items.
 function suggestions() {
   const typed = $('#search').value.trim().toLowerCase();
   if (!typed) return null;
-  const whole = quickMatches(typed);
+  const find = q => q[0] === '-'
+    ? (q.length > 1 ? quickMatches(q.slice(1)).map(m => ({ ...m, not: true })) : [])
+    : quickMatches(q);
+  const whole = find(typed);
   if (whole.length) return { found: whole, rest: '' };
   const words = typed.split(/\s+/);
   const last = words.pop();
-  return { found: quickMatches(last), rest: words.join(' ') };
+  return { found: find(last), rest: words.join(' ') };
 }
 
 // Chip strip above the bottom search. Always: active filters first (tap to
@@ -187,17 +202,20 @@ function renderFilters() {
   $('#clearBtn').hidden = n === 0;
   const focused = document.activeElement === $('#search');
   const typing = suggestions();
-  const active = PICKS.flatMap(p => (filters[p.key] ?? []).map(v => ({ key: p.key, v })));
-  const more = typing ? typing.found.filter(m => !isFiltered(m.key, m.v))
+  const active = PICKS.flatMap(p => [
+    ...(filters[p.key] ?? []).map(v => ({ key: p.key, v })),
+    ...(excluded[p.key] ?? []).map(v => ({ key: p.key, v, not: true })),
+  ]);
+  const more = typing ? typing.found.filter(m => !(m.not ? isExcluded : isFiltered)(m.key, m.v))
     : focused ? recent.filter(r => !isFiltered(r.key, r.v) && valuesOf(r.key).some(v => same(v, r.v)))
     : [];
   const chip = (m, fromText) => {
-    const b = filterChip(m.key, m.v, true);
+    const b = filterChip(m.key, m.v, true, m.not);
     // Keep the keyboard open, ready for the next word.
     b.onmousedown = e => e.preventDefault();
     b.onclick = () => {
       if (fromText) $('#search').value = typing.rest ? typing.rest + ' ' : '';
-      toggleFilter(m.key, m.v);
+      toggleFilter(m.key, m.v, m.not);
     };
     return b;
   };
@@ -213,7 +231,7 @@ function renderFilters() {
 
 $('#filterBtn').onmousedown = e => e.preventDefault();
 $('#clearBtn').onmousedown = e => e.preventDefault();
-$('#clearBtn').onclick = () => { filters = {}; renderFilters(); search(); };
+$('#clearBtn').onclick = clearAll;
 $('#search').onfocus = renderFilters;
 $('#search').onblur = renderFilters;
 $('#search').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
@@ -241,9 +259,21 @@ function renderFilterMenu() {
     const el = document.createElement('div');
     el.className = 'pick';
     el.innerHTML = `<div class="label">${p.label}</div><div class="chips"></div>`;
-    el.querySelector('.chips').append(...values.map(v => filterChip(p.key, v)));
+    el.querySelector('.chips').append(...values.map(v => {
+      const b = filterChip(p.key, v);
+      if (editValues) {
+        b.className = '';
+        b.onclick = () => openValueEdit(p.key, v);
+      }
+      return b;
+    }));
     return [el];
   });
+  $('#filterPicks').classList.toggle('editing', editValues);
+  $('#editValues').classList.toggle('on', editValues);
+  $('#filterHint').textContent = editValues
+    ? 'Tap a value to rename or delete it. This changes every item that uses it.'
+    : 'Same field: any of them. Different fields: all of them.';
   if (!sections.length) {
     const none = document.createElement('div');
     none.className = 'hint';
@@ -254,7 +284,77 @@ function renderFilterMenu() {
   $('#closeFilters').textContent = `Show ${items.filter(passes).length}`;
 }
 
+// Edit mode: tapping a chip in the Filters sheet renames or deletes that value
+// in every item that uses it (instead of turning the filter on).
+let editValues = false;
+let valueTarget = null;  // { key, v } being edited
+
+const usersOf = (key, v) => items.filter(i => list(i[key]).some(x => same(x, v)));
+
+function openValueEdit(key, v) {
+  valueTarget = { key, v };
+  const n = usersOf(key, v).length;
+  $('#valueTitle').textContent = `${labelOf(key)} · ${n} item${n === 1 ? '' : 's'}`;
+  $('#valueName').value = v;
+  $('#valueHint').textContent = '';
+  $('#valueEdit').showModal();
+  $('#valueName').select();
+}
+
+// Another value in the same field with the new name (so the two would merge).
+function mergeTarget() {
+  const typed = $('#valueName').value.trim();
+  const { key, v } = valueTarget;
+  return valuesOf(key).find(o => same(o, typed) && !same(o, v));
+}
+
+$('#valueName').oninput = () => {
+  const other = mergeTarget();
+  $('#valueHint').textContent = other ? `"${other}" already exists. They will be merged.` : '';
+};
+$('#valueName').onkeydown = e => { if (e.key === 'Enter') $('#valueSave').click(); };
+$('#valueCancel').onclick = () => $('#valueEdit').close();
+$('#valueSave').onclick = () => {
+  const next = $('#valueName').value.trim();
+  if (!next) return $('#valueName').focus();
+  changeValue(valueTarget.key, valueTarget.v, next);
+};
+$('#valueDelete').onclick = () => {
+  const { key, v } = valueTarget;
+  const n = usersOf(key, v).length;
+  if (confirm(`Remove "${v}" from ${n} item${n === 1 ? '' : 's'}? The items stay.`)) changeValue(key, v, '');
+};
+
+// Renames `old` to `next` in one field of every item (next = '' removes it).
+// Multi fields drop duplicates, so renaming onto an existing value merges them.
+async function changeValue(key, old, next) {
+  const multi = PICKS.find(p => p.key === key).multi;
+  const changed = usersOf(key, old).map(item => {
+    const out = [];
+    for (const x of list(item[key])) {
+      const y = same(x, old) ? next : x;
+      if (y && !out.some(o => same(o, y))) out.push(y);
+    }
+    item[key] = multi ? out : out[0] ?? '';
+    return { item };
+  });
+  await DB.saveMany(changed);
+  const wasOn = isFiltered(key, old);
+  filters[key] = (filters[key] ?? []).filter(f => !same(f, old));
+  if (wasOn && next && !isFiltered(key, next)) filters[key].push(next);
+  const wasNot = isExcluded(key, old);
+  excluded[key] = (excluded[key] ?? []).filter(f => !same(f, old));
+  if (wasNot && next && !isExcluded(key, next)) excluded[key].push(next);
+  recent = recent.filter(r => !(r.key === key && same(r.v, old)));
+  localStorage.setItem('clothes-recent', JSON.stringify(recent));
+  $('#valueEdit').close();
+  await load();
+}
+
+$('#editValues').onclick = () => { editValues = !editValues; renderFilterMenu(); };
+
 $('#filterBtn').onclick = () => {
+  editValues = false;
   $('#filterSearch').value = '';
   renderFilterMenu();
   $('#filters').showModal();
@@ -263,7 +363,7 @@ $('#filterBtn').onclick = () => {
 $('#filterSearch').oninput = renderFilterMenu;
 $('#filterSearch').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 $('#closeFilters').onclick = () => $('#filters').close();
-$('#clearFilters').onclick = () => { filters = {}; renderFilters(); search(); };
+$('#clearFilters').onclick = clearAll;
 
 // ---------- List ----------
 function esc(s) {
