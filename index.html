@@ -63,6 +63,10 @@
     <div class="label" id="valueTitle"></div>
     <input id="valueName" autocomplete="off" enterkeyhint="done">
     <div class="hint" id="valueHint"></div>
+    <label id="valueInsideRow" hidden><span class="label">Inside (Where)</span>
+      <select id="valueInside"></select>
+    </label>
+    <div class="hint" id="valueInsideHint"></div>
     <div class="row">
       <button type="button" id="valueDelete" class="danger">Delete</button>
       <button type="button" id="valueCancel">Cancel</button>
@@ -72,6 +76,7 @@
 
   <dialog id="editor">
     <form id="form" method="dialog">
+      <div id="copyHint" class="hint" hidden></div>
       <div id="photoStrip"></div>
       <div id="photoHint" class="hint">No photo</div>
       <div class="row">
@@ -80,6 +85,10 @@
         <button type="button" id="pasteBtn">Paste</button>
       </div>
       <input name="title" placeholder="Name (optional)" autocomplete="off">
+      <div class="pick" id="tagPick">
+        <input id="tagSearch" type="search" placeholder="🔍 Search all tags… e.g. red, winter" autocomplete="off" enterkeyhint="done">
+        <div id="tagResults" class="chips"></div>
+      </div>
       <div id="picks"></div>
       <input name="price" type="number" inputmode="decimal" step="any" placeholder="Price">
       <div class="label">Date bought</div>
@@ -98,6 +107,7 @@
       <div id="adDate" class="hint"></div>
       <div class="row">
         <button type="button" id="deleteBtn" class="danger">Delete</button>
+        <button type="button" id="dupBtn">Duplicate</button>
         <button type="button" id="cancelBtn">Cancel</button>
         <button type="submit" class="primary">Save</button>
       </div>
@@ -121,6 +131,7 @@
     <div id="detailsInfo"></div>
     <div class="row">
       <button type="button" id="detailsEdit">Edit</button>
+      <button type="button" id="detailsDup">Duplicate</button>
       <button type="button" id="detailsClose" class="primary">Close</button>
     </div>
   </dialog>

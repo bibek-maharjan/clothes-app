@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v12`).
+  (now `clothes-v16`).
 
 ## Update history
 
@@ -81,6 +81,24 @@ Export/Import .zip backup.
   Clear clears both. A value is never in both `filters` and `excluded`.
   Not saved to the 5 recent. Tested headless. Deployed.
 
+- v14: containers. **Place** is shown as **Container** (a plastic/jhola; key
+  stays `place`), and it sits inside a **Where** (bora etc.). No new data:
+  `homeOf(place)` = the Where most items in that container use. Editor:
+  picking a container also picks its Where (`choose()`). Filters ✎ Edit on a
+  container shows an **Inside (Where)** select; Save renames and moves every
+  item in it to that Where (`changeValue(key, old, next, where)`). If its
+  items disagree, a hint says Save will put them all in one. Tested headless.
+  Not deployed. (Built on top of uncommitted v13 work: colored Color pills.)
+
+- v15: master tag search in the editor (the user's idea). `#tagSearch` sits
+  above the fields and searches values from **every** field (`tagMatches()`,
+  uses `choices()` so seeds count; a field name shows all its values). Chips
+  show `value  field`; tapping one picks/unpicks it in that field
+  (`choose()`), clears the box and keeps the keyboard open. A value that
+  exists nowhere shows `+ add "…" to…`, then a chip per field to choose
+  where it goes. Enter = the only (or only exact) match; no match = ask the
+  field. Tested headless. Deployed with v16.
+
 ## Decisions (from the user, Nov 2026)
 
 - Fields: photos (several, ★ cover), name (optional), price, and pick-list
@@ -92,6 +110,7 @@ Export/Import .zip backup.
   (`PICKS` in `app.js`). **season** and **context** allow several values and
   are stored as arrays; the rest are strings.
 - **place** is a sub-location of **where** (shown as `📍 where › place`).
+  Since v14 it is labelled **Container**: one container lives in one Where.
 - With no name, the item shows as `color type` (`displayName()`).
 - Opens in **Gallery, 2 columns**. List view also available. Newest first.
 - The old Obsidian views (Upper, Winter, ...) are just searches:

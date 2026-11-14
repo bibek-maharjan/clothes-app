@@ -19,7 +19,7 @@ const PICKS = [
   { key: 'context', label: 'Context', multi: true, seed: ['outside', 'home', 'home sleep'] },
   { key: 'newness', label: 'Newness', seed: ['new', 'old'] },
   { key: 'where', label: 'Where' },
-  { key: 'place', label: 'Place' },
+  { key: 'place', label: 'Container' },
   { key: 'size', label: 'Size' },
   { key: 'brand', label: 'Brand' },
   { key: 'other', label: 'Other' },
@@ -129,6 +129,26 @@ function remember(key, v) {
 const labelOf = key => PICKS.find(p => p.key === key)?.label ?? key;
 const valuesOf = key => mostUsed(items.flatMap(i => list(i[key])));
 
+// Color names stay as labels; recognized colors also fill the pill.
+function colorPill(button, key, value) {
+  if (key !== 'color') return;
+  const name = value.trim().toLowerCase().replace(/[\s-]+/g, '');
+  const color = ({ cream: '#fffdd0', beige: '#f5f5dc' })[name] ?? name;
+  // Only accept actual color names, not CSS keywords such as inherit/currentColor.
+  if (!/^(#[0-9a-f]{6}|[a-z]+)$/.test(color) ||
+      ['transparent', 'currentcolor', 'inherit', 'initial', 'unset', 'revert'].includes(color) ||
+      !CSS.supports('color', color)) return;
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.fillStyle = color;
+  const hex = ctx.fillStyle;
+  const rgb = hex.slice(1).match(/../g).map(c => parseInt(c, 16) / 255)
+    .map(c => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const luminance = rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+  button.classList.add('color-pill');
+  button.style.setProperty('--pill-color', color);
+  button.style.setProperty('--pill-text', luminance > 0.179 ? '#000' : '#fff');
+}
+
 function passes(item) {
   return Object.entries(filters).every(([key, vals]) =>
     !vals.length || list(item[key]).some(v => vals.some(f => same(f, v))))
@@ -160,6 +180,8 @@ function filterChip(key, v, withField, not = false) {
   b.type = 'button';
   b.className = not ? (isExcluded(key, v) ? 'not' : 'not-hint') : isFiltered(key, v) ? 'on' : '';
   b.innerHTML = (not ? 'not ' : '') + esc(v) + (withField ? ` <small>${esc(labelOf(key).toLowerCase())}</small>` : '');
+  b.setAttribute('aria-pressed', not ? isExcluded(key, v) : isFiltered(key, v));
+  if (!not) colorPill(b, key, v);
   b.onclick = () => toggleFilter(key, v, not);
   return b;
 }
@@ -262,7 +284,8 @@ function renderFilterMenu() {
     el.querySelector('.chips').append(...values.map(v => {
       const b = filterChip(p.key, v);
       if (editValues) {
-        b.className = '';
+        b.classList.remove('on');
+        b.removeAttribute('aria-pressed');
         b.onclick = () => openValueEdit(p.key, v);
       }
       return b;
@@ -297,6 +320,19 @@ function openValueEdit(key, v) {
   $('#valueTitle').textContent = `${labelOf(key)} · ${n} item${n === 1 ? '' : 's'}`;
   $('#valueName').value = v;
   $('#valueHint').textContent = '';
+  // Containers also choose which Where they are in.
+  const isPlace = key === 'place';
+  $('#valueInsideRow').hidden = !isPlace;
+  $('#valueInsideHint').textContent = '';
+  $('#valueSave').textContent = isPlace ? 'Save' : 'Rename';
+  if (isPlace) {
+    const home = homeOf(v);
+    const wheres = valuesOf('where');
+    $('#valueInside').replaceChildren(new Option('— none —', ''), ...wheres.map(w => new Option(w, w)));
+    $('#valueInside').value = wheres.find(w => same(w, home)) ?? '';
+    const mixed = mostUsed(usersOf(key, v).map(i => i.where ?? '')).length > 1;
+    if (mixed) $('#valueInsideHint').textContent = `Its items are in different places now. Save puts them all in the one chosen above.`;
+  }
   $('#valueEdit').showModal();
   $('#valueName').select();
 }
@@ -317,7 +353,8 @@ $('#valueCancel').onclick = () => $('#valueEdit').close();
 $('#valueSave').onclick = () => {
   const next = $('#valueName').value.trim();
   if (!next) return $('#valueName').focus();
-  changeValue(valueTarget.key, valueTarget.v, next);
+  const where = valueTarget.key === 'place' ? $('#valueInside').value : undefined;
+  changeValue(valueTarget.key, valueTarget.v, next, where);
 };
 $('#valueDelete').onclick = () => {
   const { key, v } = valueTarget;
@@ -327,7 +364,8 @@ $('#valueDelete').onclick = () => {
 
 // Renames `old` to `next` in one field of every item (next = '' removes it).
 // Multi fields drop duplicates, so renaming onto an existing value merges them.
-async function changeValue(key, old, next) {
+// `where` (containers only) moves every item in the container to that Where.
+async function changeValue(key, old, next, where) {
   const multi = PICKS.find(p => p.key === key).multi;
   const changed = usersOf(key, old).map(item => {
     const out = [];
@@ -336,6 +374,7 @@ async function changeValue(key, old, next) {
       if (y && !out.some(o => same(o, y))) out.push(y);
     }
     item[key] = multi ? out : out[0] ?? '';
+    if (where !== undefined) item.where = where;
     return { item };
   });
   await DB.saveMany(changed);
@@ -373,7 +412,7 @@ function esc(s) {
 // ---------- View settings (list / gallery) ----------
 const PROPS = [
   ['photo', 'Photo'], ['name', 'Name'], ['price', 'Price'],
-  ...PICKS.filter(p => p.key !== 'place').map(p => [p.key, p.key === 'where' ? 'Where › Place' : p.label]),
+  ...PICKS.filter(p => p.key !== 'place').map(p => [p.key, p.key === 'where' ? 'Where › Container' : p.label]),
   ['dateBS', 'Date (BS)'], ['date', 'Date (AD)'],
 ];
 const propsOn = keys => Object.fromEntries(PROPS.map(([k]) => [k, !keys || keys.includes(k)]));
@@ -490,6 +529,7 @@ $('#detailsPhotos').onclick = () => viewPhoto(detailsItem);
 $('#detailsClose').onclick = () => $('#details').close();
 $('#details').onclose = () => showPhotos($('#detailsPhotos'), []);
 $('#detailsEdit').onclick = () => { $('#details').close(); openEditor(detailsItem); };
+$('#detailsDup').onclick = async () => { $('#details').close(); await openEditor(detailsItem); duplicate(); };
 
 // Fills a container with <img>s for the given Blobs (frees the old ones).
 function showPhotos(box, blobs) {
@@ -639,7 +679,16 @@ function choose(p, value, on) {
   const rest = picked[p.key].filter(v => !same(v, value));
   picked[p.key] = on ? (p.multi ? [...rest, value] : [value]) : rest;
   renderPick(p);
+  // A container sits in one Where, so picking it picks that Where too.
+  const home = p.key === 'place' && on && homeOf(value);
+  if (home) {
+    picked.where = [home];
+    renderPick(PICKS.find(x => x.key === 'where'));
+  }
 }
+
+// The Where a container is in: the one most items in that container use.
+const homeOf = place => mostUsed(usersOf('place', place).map(i => i.where))[0] ?? '';
 
 // One row of chips per field. Tap to pick (tap again to unpick).
 // Typing in "find / + new" narrows the chips; if the value is new, "+ add" appears.
@@ -660,6 +709,8 @@ function renderPick(p) {
     b.type = 'button';
     b.textContent = v;
     b.className = isOn(v) ? 'on' : '';
+    b.setAttribute('aria-pressed', isOn(v));
+    colorPill(b, p.key, v);
     b.onclick = () => choose(p, v, !isOn(v));
     return b;
   });
@@ -692,6 +743,80 @@ function renderPick(p) {
   add.onclick = pickTyped;
   chips.replaceChildren(find, ...buttons, add);
 }
+
+// ---------- Master tag search ----------
+// One box above the fields that searches values from every field (a field
+// name shows all its values). Tapping a chip picks/unpicks it in its field,
+// clears the box and keeps the keyboard open. A new value asks which field.
+let tagAdding = false;  // showing "add to which field?" for the typed text
+
+function tagMatches(q) {
+  const found = PICKS.flatMap(p => {
+    const whole = p.label.toLowerCase().includes(q);
+    return choices(p).filter(v => whole || v.toLowerCase().includes(q)).map(v => ({ p, v }));
+  });
+  const starts = m => m.v.toLowerCase().startsWith(q) ? 0 : 1;
+  return found.sort((a, b) => starts(a) - starts(b));
+}
+
+// Buttons here don't take focus, so the keyboard stays open.
+function tagButton(html, onTap) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.innerHTML = html;
+  b.onmousedown = e => e.preventDefault();
+  b.onclick = onTap;
+  return b;
+}
+
+function tagDone() {
+  $('#tagSearch').value = '';
+  tagAdding = false;
+  renderTags();
+}
+
+function renderTags() {
+  const typed = $('#tagSearch').value.trim();
+  const q = typed.toLowerCase();
+  if (!q) return $('#tagResults').replaceChildren();
+  if (tagAdding) {
+    const hint = document.createElement('div');
+    hint.className = 'hint';
+    hint.textContent = `Add "${typed}" to which field?`;
+    const fields = PICKS.map(p => tagButton(esc(p.label), () => { choose(p, typed, true); tagDone(); }));
+    const back = tagButton('Cancel', () => { tagAdding = false; renderTags(); });
+    return $('#tagResults').replaceChildren(hint, ...fields, back);
+  }
+  const chips = tagMatches(q).map(({ p, v }) => {
+    const on = picked[p.key].some(c => same(c, v));
+    const b = tagButton(`${esc(v)} <small>${esc(p.label.toLowerCase())}</small>`, () => { choose(p, v, !on); tagDone(); });
+    b.className = on ? 'on' : '';
+    b.setAttribute('aria-pressed', on);
+    colorPill(b, p.key, v);
+    return b;
+  });
+  const exact = PICKS.some(p => choices(p).some(v => same(v, typed)));
+  if (!exact) {
+    const add = tagButton(`+ add "${esc(typed)}" to…`, () => { tagAdding = true; renderTags(); });
+    add.className = 'add';
+    chips.push(add);
+  }
+  $('#tagResults').replaceChildren(...chips);
+}
+
+$('#tagSearch').oninput = () => { tagAdding = false; renderTags(); };
+// Enter: the only match (or the only exact one) is picked; otherwise wait.
+$('#tagSearch').onkeydown = e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const typed = $('#tagSearch').value.trim();
+  if (!typed) return $('#tagSearch').blur();
+  const found = tagMatches(typed.toLowerCase());
+  const exact = found.filter(m => same(m.v, typed));
+  const pick = exact.length === 1 ? exact[0] : found.length === 1 ? found[0] : null;
+  if (pick) { choose(pick.p, pick.v, true); tagDone(); }
+  else if (!found.length) { tagAdding = true; renderTags(); }
+};
 
 $('#picks').replaceChildren(...PICKS.map(p => {
   const el = document.createElement('div');
@@ -755,10 +880,13 @@ async function openEditor(item) {
     picked[p.key] = [...list(item?.[p.key])];
     renderPick(p);
   }
+  tagDone();
   const bs = item?.dateBS;
   if (bs) setBSPicker(bs);
   pickDay(!bs ? 'none' : bs === adToBS(today()) ? 'today' : bs === adToBS(yesterday()) ? 'yesterday' : 'custom');
   $('#deleteBtn').hidden = !item;
+  $('#dupBtn').hidden = !item;
+  $('#copyHint').hidden = true;
   $('#editor').showModal();
   $('#editor').scrollTop = 0;
   if (item) {
@@ -847,6 +975,20 @@ $('#form').onsubmit = async e => {
   $('#editor').close();
   await load();
 };
+
+// Turns the open editor into a new item with the same photos and fields
+// (whatever is on screen). The original stays as it was; Save adds the copy.
+function duplicate() {
+  const from = editing;
+  editing = null;
+  photosChanged = true;
+  $('#deleteBtn').hidden = true;
+  $('#dupBtn').hidden = true;
+  $('#copyHint').textContent = `Copy of "${displayName(from)}". Change what you need, then Save to add it.`;
+  $('#copyHint').hidden = false;
+  $('#editor').scrollTop = 0;
+}
+$('#dupBtn').onclick = duplicate;
 
 $('#editor').onclose = clearStrip;
 $('#cancelBtn').onclick = () => $('#editor').close();
