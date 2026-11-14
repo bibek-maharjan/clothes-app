@@ -1152,6 +1152,22 @@ $('#importFile').onchange = async e => {
   await load();
 };
 
+// ---------- Toast (a bar at the bottom with one action) ----------
+let toastTimer;
+function hideToast() {
+  clearTimeout(toastTimer);
+  $('#toast').hidden = true;
+}
+// ms = 0 keeps it until the button is tapped.
+function toast(text, label, action, ms = 8000) {
+  clearTimeout(toastTimer);
+  $('#toastText').textContent = text;
+  $('#toastBtn').textContent = label;
+  $('#toastBtn').onclick = () => { hideToast(); action(); };
+  $('#toast').hidden = false;
+  if (ms) toastTimer = setTimeout(hideToast, ms);
+}
+
 // ---------- Start ----------
 async function load() {
   items = await DB.allItems();
@@ -1165,5 +1181,14 @@ $('#addBtn').onclick = () => openEditor(null);
 applyView();
 load();
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+if ('serviceWorker' in navigator) {
+  // A new version takes over in the background; offer a reload to start using it.
+  const hadWorker = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadWorker) toast('A new version is ready', 'Reload', () => location.reload(), 0);
+  });
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update(); });
+  });
+}
 navigator.storage?.persist?.();

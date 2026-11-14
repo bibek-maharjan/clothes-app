@@ -111,6 +111,17 @@ select {
   z-index: 2;
 }
 
+/* Bottom bar with one action (Reload), next to the + button. */
+#toast {
+  position: fixed; left: 10px; right: 96px; bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 4;
+  display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px;
+  background: #2e2e36; border: 1px solid #3a3a44; border-radius: 12px; box-shadow: 0 4px 16px #0008;
+}
+#toast[hidden] { display: none; }
+body.strip #toast { bottom: calc(144px + env(safe-area-inset-bottom)); }
+#toastText { flex: 1; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+#toastBtn { flex: 0 0 auto; padding: 8px 14px; background: none; border: none; color: #7ee2d4; font-weight: 600; }
+
 dialog {
   background: #1d1d22; color: #eee; border: 1px solid #333;
   border-radius: 14px; width: min(94vw, 480px); padding: 14px;

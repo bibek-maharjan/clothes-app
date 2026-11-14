@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v17`).
+  (now `clothes-v18`).
 
 ## Update history
 
@@ -107,6 +107,12 @@ Export/Import .zip backup.
   v16 deploy (another session committed it); v17 only fixes the editor's
   bottom row so "Duplicate" fits at 360px (buttons size to their text).
   Deployed with v17.
+
+- v18: reload popup, copied from Things. When a new version takes over
+  (`controllerchange`, only if a worker was already in charge), a `#toast`
+  bar next to the + button says "A new version is ready" with **Reload**.
+  The app also checks for updates each time it comes back on screen
+  (`reg.update()` on `visibilitychange`). Tested headless. Deployed.
 
 ## Decisions (from the user, Nov 2026)
 

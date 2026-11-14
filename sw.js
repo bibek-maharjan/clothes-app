@@ -1,6 +1,6 @@
 // Caches the app files so it opens offline. Bump VERSION after changing any file.
 // Caches are shared with the Purchases app (same website), so only touch 'clothes-' ones.
-const VERSION = 'clothes-v17';
+const VERSION = 'clothes-v18';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'db.js', 'zip.js', 'nepali.js',
   'manifest.json', 'icon-192.png', 'icon-512.png'];
 
