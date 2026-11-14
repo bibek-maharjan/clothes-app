@@ -88,7 +88,7 @@ Export/Import .zip backup.
   container shows an **Inside (Where)** select; Save renames and moves every
   item in it to that Where (`changeValue(key, old, next, where)`). If its
   items disagree, a hint says Save will put them all in one. Tested headless.
-  Not deployed. (Built on top of uncommitted v13 work: colored Color pills.)
+  Deployed with v16. (Built on top of uncommitted v13 work: colored Color pills.)
 
 - v15: master tag search in the editor (the user's idea). `#tagSearch` sits
   above the fields and searches values from **every** field (`tagMatches()`,
