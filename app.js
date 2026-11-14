@@ -273,6 +273,7 @@ visualViewport.addEventListener('resize', () => {
 function renderFilterMenu() {
   const q = $('#filterSearch').value.trim().toLowerCase();
   const sections = PICKS.flatMap(p => {
+    if (placesOnly && !['where', 'place'].includes(p.key)) return [];
     let values = mostUsed(items.flatMap(i => list(i[p.key])));
     if (q && !p.label.toLowerCase().includes(q)) {
       values = values.filter(v => v.toLowerCase().includes(q) || isFiltered(p.key, v));
@@ -304,12 +305,15 @@ function renderFilterMenu() {
     sections.push(none);
   }
   $('#filterPicks').replaceChildren(...sections);
-  $('#closeFilters').textContent = `Show ${items.filter(passes).length}`;
+  $('#editValues').hidden = placesOnly;
+  $('#clearFilters').hidden = placesOnly;
+  $('#closeFilters').textContent = placesOnly ? 'Done' : `Show ${items.filter(passes).length}`;
 }
 
 // Edit mode: tapping a chip in the Filters sheet renames or deletes that value
 // in every item that uses it (instead of turning the filter on).
 let editValues = false;
+let placesOnly = false;  // opened from the menu: only Where and Container, always editing
 let valueTarget = null;  // { key, v } being edited
 
 const usersOf = (key, v) => items.filter(i => list(i[key]).some(x => same(x, v)));
@@ -410,13 +414,16 @@ async function changeValue(key, old, next, where) {
 
 $('#editValues').onclick = () => { editValues = !editValues; renderFilterMenu(); };
 
-$('#filterBtn').onclick = () => {
-  editValues = false;
+function openFilters(places) {
+  editValues = places;
+  placesOnly = places;
   $('#filterSearch').value = '';
   renderFilterMenu();
   $('#filters').showModal();
   $('#filterPicks').scrollTop = 0;
-};
+}
+$('#filterBtn').onclick = () => openFilters(false);
+$('#placesBtn').onclick = () => { $('#menu').close(); openFilters(true); };
 $('#filterSearch').oninput = renderFilterMenu;
 $('#filterSearch').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 $('#closeFilters').onclick = () => $('#filters').close();

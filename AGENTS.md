@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v19`).
+  (now `clothes-v20`).
 
 ## Update history
 
@@ -118,6 +118,12 @@ Export/Import .zip backup.
   ends with **+ New Where…** (`NEW_WHERE`); picking it shows `#valueNewWhere`
   to type a Where no item uses yet. Save with it empty does nothing; typing an
   existing Where (any case) reuses its spelling. Tested headless. Deployed.
+
+- v20: **Edit containers & Where** in the ⋮ menu (`#placesBtn`). Opens the
+  Filters sheet via `openFilters(true)`: `placesOnly` shows only Where and
+  Container, already in edit mode; ✎ Edit and Clear all are hidden and the
+  button says **Done**. The normal Filters button calls `openFilters(false)`.
+  Tested headless. Deployed.
 
 ## Decisions (from the user, Nov 2026)
 
