@@ -121,7 +121,8 @@ dialog::backdrop { background: #000a; }
 .row > * { flex: 1; }
 .primary { background: #1f9e8f; border: none; }
 .row[hidden] { display: none; }
-.date-quick button, #form > .row:last-child button { min-width: 0; padding: 12px 4px; }
+.date-quick button { min-width: 0; padding: 12px 4px; }
+#form > .row:last-child button { flex: 1 1 auto; padding: 12px 6px; }
 .date-quick .active { background: #1f9e8f; border-color: #1f9e8f; }
 .row > .cal-btn { flex: 0 0 48px; padding: 12px 0; position: relative; }
 .cal-btn input { position: absolute; inset: 0; opacity: 0; width: 100%; padding: 0; }

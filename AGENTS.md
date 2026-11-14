@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v16`).
+  (now `clothes-v17`).
 
 ## Update history
 
@@ -98,6 +98,15 @@ Export/Import .zip backup.
   exists nowhere shows `+ add "…" to…`, then a chip per field to choose
   where it goes. Enter = the only (or only exact) match; no match = ask the
   field. Tested headless. Deployed with v16.
+
+- v16/v17: duplicate. **Duplicate** button in the editor (existing items
+  only) and in the details sheet. `duplicate()` turns the open editor into a
+  new item (`editing = null`, `photosChanged = true`) with the same photos and
+  fields as on screen; `#copyHint` says it is a copy. Nothing is saved until
+  Save; the original is untouched. Tested headless. The code went out with the
+  v16 deploy (another session committed it); v17 only fixes the editor's
+  bottom row so "Duplicate" fits at 360px (buttons size to their text).
+  Deployed with v17.
 
 ## Decisions (from the user, Nov 2026)
 
