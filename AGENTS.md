@@ -10,7 +10,7 @@ Export/Import .zip backup.
 - Repo: https://github.com/bibek-maharjan/clothes-app (Pages from `main`, root)
 - GitHub account: **bibek-maharjan** only.
 - **Deploy only when the user asks.** Bump `VERSION` in `sw.js` on every change
-  (now `clothes-v18`).
+  (now `clothes-v19`).
 
 ## Update history
 
@@ -113,6 +113,11 @@ Export/Import .zip backup.
   bar next to the + button says "A new version is ready" with **Reload**.
   The app also checks for updates each time it comes back on screen
   (`reg.update()` on `visibilitychange`). Tested headless. Deployed.
+
+- v19: new Where from the container ✎ Edit box. The **Inside (Where)** list
+  ends with **+ New Where…** (`NEW_WHERE`); picking it shows `#valueNewWhere`
+  to type a Where no item uses yet. Save with it empty does nothing; typing an
+  existing Where (any case) reuses its spelling. Tested headless. Deployed.
 
 ## Decisions (from the user, Nov 2026)
 

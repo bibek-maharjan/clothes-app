@@ -324,11 +324,14 @@ function openValueEdit(key, v) {
   const isPlace = key === 'place';
   $('#valueInsideRow').hidden = !isPlace;
   $('#valueInsideHint').textContent = '';
+  $('#valueNewWhere').hidden = true;
+  $('#valueNewWhere').value = '';
   $('#valueSave').textContent = isPlace ? 'Save' : 'Rename';
   if (isPlace) {
     const home = homeOf(v);
     const wheres = valuesOf('where');
-    $('#valueInside').replaceChildren(new Option('— none —', ''), ...wheres.map(w => new Option(w, w)));
+    $('#valueInside').replaceChildren(new Option('— none —', ''), ...wheres.map(w => new Option(w, w)),
+      new Option('+ New Where…', NEW_WHERE));
     $('#valueInside').value = wheres.find(w => same(w, home)) ?? '';
     const mixed = mostUsed(usersOf(key, v).map(i => i.where ?? '')).length > 1;
     if (mixed) $('#valueInsideHint').textContent = `Its items are in different places now. Save puts them all in the one chosen above.`;
@@ -349,11 +352,26 @@ $('#valueName').oninput = () => {
   $('#valueHint').textContent = other ? `"${other}" already exists. They will be merged.` : '';
 };
 $('#valueName').onkeydown = e => { if (e.key === 'Enter') $('#valueSave').click(); };
+
+// "+ New Where…" in the Inside list shows a box to type a Where no item uses yet.
+const NEW_WHERE = '\u0000new';
+$('#valueInside').onchange = () => {
+  const adding = $('#valueInside').value === NEW_WHERE;
+  $('#valueNewWhere').hidden = !adding;
+  if (adding) $('#valueNewWhere').focus();
+};
+$('#valueNewWhere').onkeydown = e => { if (e.key === 'Enter') $('#valueSave').click(); };
 $('#valueCancel').onclick = () => $('#valueEdit').close();
 $('#valueSave').onclick = () => {
   const next = $('#valueName').value.trim();
   if (!next) return $('#valueName').focus();
-  const where = valueTarget.key === 'place' ? $('#valueInside').value : undefined;
+  let where = valueTarget.key === 'place' ? $('#valueInside').value : undefined;
+  if (where === NEW_WHERE) {
+    const typed = $('#valueNewWhere').value.trim();
+    if (!typed) return $('#valueNewWhere').focus();
+    // Typing a Where that already exists uses that one (same spelling).
+    where = valuesOf('where').find(w => same(w, typed)) ?? typed;
+  }
   changeValue(valueTarget.key, valueTarget.v, next, where);
 };
 $('#valueDelete').onclick = () => {
